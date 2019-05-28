@@ -1,0 +1,10 @@
+[package]
+name = "flute-transcriber"
+version = "0.1.0"
+authors = ["sbtnRey <sxr@pdx.edu>"]
+
+
+[dependencies]
+portaudio = "0.7.0"
+gtk = "0.3.0"
+rusty_microphone = { git = "https://github.com/JWorthe/rusty_microphone.git"}
