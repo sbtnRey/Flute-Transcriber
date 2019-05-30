@@ -79,7 +79,7 @@ fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui
     hbox.add(&dropdown);
 
     let note_tracker = gtk::Label::new(None);
-    note_tracker.set_size_request(700, 600);
+    note_tracker.set_size_request(70, 60);
     vbox.add(&note_tracker);
 
     window.show_all();
@@ -140,15 +140,23 @@ fn start_listening_current_dropdown_value(dropdown: &gtk::ComboBoxText, mic_send
     }
     state.borrow_mut().pa_stream = stream;
 }
-
+//-------------------------------------------------------------------------------------------------
 
 
 fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<Model>>) {
 
     gtk::timeout_add(1000/FPS, move || {
         let ui = &state.borrow().ui;
+
         if let Ok(cross_thread_state) = cross_thread_state.read() {
-            // println!("{}", &cross_thread_state.pitch_display());
+            let mut pitch = &cross_thread_state.pitch_display();
+            //let note = pitch.to_string();
+
+            if pitch != ""{
+                println!("{} ", pitch);
+            }
+
+
             ui.note_tracker.set_label(&cross_thread_state.pitch_display());
 
         }
