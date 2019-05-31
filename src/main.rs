@@ -19,6 +19,8 @@ use rusty_microphone::audio;
 use rusty_microphone::signal::Signal;
 
 
+
+
 //-------------------------------------------------------------------------------------------------
 // Below code is partially sourced and modified from https://github.com/JWorthe/rusty_microphone
 //-------------------------------------------------------------------------------------------------
@@ -79,7 +81,7 @@ fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui
     hbox.add(&dropdown);
 
     let note_tracker = gtk::Label::new(None);
-    note_tracker.set_size_request(70, 60);
+    note_tracker.set_size_request(40, 0);
     vbox.add(&note_tracker);
 
     window.show_all();
@@ -93,7 +95,6 @@ fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui
 fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Arc<RwLock<Model>>) {
     thread::spawn(move || {
         while let Ok(signal) = mic_receiver.recv() {
-            //just in case we hit performance difficulties, clear out the channel
             while mic_receiver.try_recv().is_ok() {}
 
             let new_model = Model::from_signal(signal);
@@ -145,24 +146,30 @@ fn start_listening_current_dropdown_value(dropdown: &gtk::ComboBoxText, mic_send
 
 fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<Model>>) {
 
+    let mut test_string = "".to_string();
     gtk::timeout_add(1000/FPS, move || {
         let ui = &state.borrow().ui;
 
         if let Ok(cross_thread_state) = cross_thread_state.read() {
             let mut pitch = &cross_thread_state.pitch_display();
-            //let note = pitch.to_string();
+            let mut track = pitch;
 
-            if pitch != ""{
-                println!("{} ", pitch);
+
+            test_string = pitch.to_string();
+            if pitch != "" || pitch.to_string() != test_string {
+
+                transcription(test_string.to_string());
             }
-
-
-            ui.note_tracker.set_label(&cross_thread_state.pitch_display());
 
         }
 
         gtk::Continue(true)
     });
+}
+
+
+fn transcription(pitch:String){
+    println!("{}", pitch)
 }
 
 fn main() {
