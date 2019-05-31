@@ -1,27 +1,23 @@
 //Author: Sebastian Reynolds (sxr@pdx.edu)
 
-extern crate rusty_microphone;
 extern crate gtk;
 extern crate portaudio;
-
+extern crate rusty_microphone;
 
 use gtk::prelude::*;
-use std::cell::RefCell;
 use portaudio as pa;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::cell::RefCell;
 use std::io;
 use std::io::Write;
-use std::thread;
+use std::rc::Rc;
 use std::sync::mpsc::*;
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::thread;
 
-use rusty_microphone::model::Model;
 use rusty_microphone::audio;
+use rusty_microphone::model::Model;
 use rusty_microphone::signal::Signal;
-
-
-
 
 //-------------------------------------------------------------------------------------------------
 // Below code is partially sourced and heavliy modified from https://github.com/JWorthe/rusty_microphone
@@ -36,7 +32,7 @@ struct Ui {
 struct ApplicationState {
     pa: pa::PortAudio,
     pa_stream: Option<pa::Stream<pa::NonBlocking, pa::Input<f32>>>,
-    ui: Ui
+    ui: Ui,
 }
 
 pub fn gui() -> Result<(), String> {
@@ -49,13 +45,12 @@ pub fn gui() -> Result<(), String> {
     let state = Rc::new(RefCell::new(ApplicationState {
         pa: pa,
         pa_stream: None,
-        ui: create_window(microphones, default_microphone)
+        ui: create_window(microphones, default_microphone),
     }));
 
     let cross_thread_state = Arc::new(RwLock::new(Model::new()));
 
     let (mic_sender, mic_receiver) = channel();
-
 
     connect_dropdown_choose_microphone(mic_sender, Rc::clone(&state));
     start_processing_audio(mic_receiver, Arc::clone(&cross_thread_state));
@@ -101,11 +96,8 @@ fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Ar
 
             let new_model = Model::from_signal(signal);
 
-
             match cross_thread_state.write() {
-                Ok(mut model) => {
-                    *model = new_model
-                },
+                Ok(mut model) => *model = new_model,
                 Err(err) => {
                     println!("Error updating cross thread state: {}", err);
                 }
@@ -114,14 +106,21 @@ fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Ar
     });
 }
 
-fn set_dropdown_items(dropdown: &gtk::ComboBoxText, microphones: Vec<(u32, String)>, default_mic: u32) {
+fn set_dropdown_items(
+    dropdown: &gtk::ComboBoxText,
+    microphones: Vec<(u32, String)>,
+    default_mic: u32,
+) {
     for (index, name) in microphones {
         dropdown.append(Some(format!("{}", index).as_ref()), name.as_ref());
     }
     dropdown.set_active_id(Some(format!("{}", default_mic).as_ref()));
 }
 
-fn connect_dropdown_choose_microphone(mic_sender: Sender<Signal>, state: Rc<RefCell<ApplicationState>>) {
+fn connect_dropdown_choose_microphone(
+    mic_sender: Sender<Signal>,
+    state: Rc<RefCell<ApplicationState>>,
+) {
     let dropdown = state.borrow().ui.dropdown.clone();
     start_listening_current_dropdown_value(&dropdown, mic_sender.clone(), &state);
     dropdown.connect_changed(move |dropdown: &gtk::ComboBoxText| {
@@ -129,13 +128,19 @@ fn connect_dropdown_choose_microphone(mic_sender: Sender<Signal>, state: Rc<RefC
     });
 }
 
-fn start_listening_current_dropdown_value(dropdown: &gtk::ComboBoxText, mic_sender: Sender<Signal>, state: &Rc<RefCell<ApplicationState>>) {
+fn start_listening_current_dropdown_value(
+    dropdown: &gtk::ComboBoxText,
+    mic_sender: Sender<Signal>,
+    state: &Rc<RefCell<ApplicationState>>,
+) {
     if let Some(ref mut stream) = state.borrow_mut().pa_stream {
         stream.stop().ok();
     }
     let selected_mic = match dropdown.get_active_id().and_then(|id| id.parse().ok()) {
         Some(mic) => mic,
-        None => {return;}
+        None => {
+            return;
+        }
     };
     let stream = ::audio::start_listening(&state.borrow().pa, selected_mic, mic_sender).ok();
     if stream.is_none() {
@@ -145,37 +150,29 @@ fn start_listening_current_dropdown_value(dropdown: &gtk::ComboBoxText, mic_send
 }
 //-------------------------------------------------------------------------------------------------
 
-
 fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<Model>>) {
-
     let mut test_string = "".to_string();
-    gtk::timeout_add(1000/FPS, move || {
+    gtk::timeout_add(1000 / FPS, move || {
         let ui = &state.borrow().ui;
 
         if let Ok(cross_thread_state) = cross_thread_state.read() {
             let mut pitch = &cross_thread_state.pitch_display();
             let mut track = pitch;
 
-
             test_string = pitch.to_string();
             if pitch != "" || pitch.to_string() != test_string {
-
                 transcription(test_string.to_string());
             }
-
         }
 
         gtk::Continue(true)
     });
 }
 
-
-fn transcription(pitch:String){
+fn transcription(pitch: String) {
     println!("{}", pitch)
 }
 
 fn main() {
-
     let gui_result = gui();
-
 }
