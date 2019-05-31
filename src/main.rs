@@ -1,3 +1,5 @@
+//Author: Sebastian Reynolds (sxr@pdx.edu)
+
 extern crate rusty_microphone;
 extern crate gtk;
 extern crate portaudio;
@@ -22,7 +24,7 @@ use rusty_microphone::signal::Signal;
 
 
 //-------------------------------------------------------------------------------------------------
-// Below code is partially sourced and modified from https://github.com/JWorthe/rusty_microphone
+// Below code is partially sourced and heavliy modified from https://github.com/JWorthe/rusty_microphone
 //-------------------------------------------------------------------------------------------------
 const FPS: u32 = 60;
 
