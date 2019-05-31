@@ -21,6 +21,7 @@ use rusty_microphone::signal::Signal;
 
 //-------------------------------------------------------------------------------------------------
 // Below code is partially sourced and heavliy modified from https://github.com/JWorthe/rusty_microphone
+// specifically from the authors gui.rs file. the repo is open sourced under the MIT license.
 //-------------------------------------------------------------------------------------------------
 const FPS: u32 = 60;
 
@@ -93,7 +94,7 @@ fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui
     }
 }
 
-//
+
 fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Arc<RwLock<Model>>) {
     thread::spawn(move || {
         while let Ok(signal) = mic_receiver.recv() {
