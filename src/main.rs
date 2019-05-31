@@ -35,6 +35,7 @@ struct ApplicationState {
     ui: Ui,
 }
 
+// Sets up portaudio devices and calls primary audio functions
 pub fn gui() -> Result<(), String> {
     let pa = try!(::audio::init().map_err(|e| e.to_string()));
     let microphones = try!(::audio::get_device_list(&pa).map_err(|e| e.to_string()));
@@ -59,6 +60,9 @@ pub fn gui() -> Result<(), String> {
     gtk::main();
     Ok(())
 }
+
+//Creates gui window primariliy to just allow the user to pick which input mic
+// if there are multiple
 fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui {
     let window = gtk::Window::new(gtk::WindowType::Toplevel);
     window.set_title("Note Tracker");
@@ -89,6 +93,7 @@ fn create_window(microphones: Vec<(u32, String)>, default_microphone: u32) -> Ui
     }
 }
 
+//
 fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Arc<RwLock<Model>>) {
     thread::spawn(move || {
         while let Ok(signal) = mic_receiver.recv() {
@@ -106,6 +111,7 @@ fn start_processing_audio(mic_receiver: Receiver<Signal>, cross_thread_state: Ar
     });
 }
 
+//Creates dropdown menu at the top of the gui
 fn set_dropdown_items(
     dropdown: &gtk::ComboBoxText,
     microphones: Vec<(u32, String)>,
@@ -117,6 +123,7 @@ fn set_dropdown_items(
     dropdown.set_active_id(Some(format!("{}", default_mic).as_ref()));
 }
 
+// Allows for user to choose mic being used
 fn connect_dropdown_choose_microphone(
     mic_sender: Sender<Signal>,
     state: Rc<RefCell<ApplicationState>>,
@@ -127,6 +134,7 @@ fn connect_dropdown_choose_microphone(
         start_listening_current_dropdown_value(dropdown, mic_sender.clone(), &state)
     });
 }
+
 
 fn start_listening_current_dropdown_value(
     dropdown: &gtk::ComboBoxText,
@@ -150,6 +158,7 @@ fn start_listening_current_dropdown_value(
 }
 //-------------------------------------------------------------------------------------------------
 
+// Tracks and calls pitch strings
 fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<Model>>) {
     let mut test_string = "".to_string();
     gtk::timeout_add(1000 / FPS, move || {
@@ -169,6 +178,7 @@ fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<
     });
 }
 
+//Currently outputs pitch to terminal, Will later write keys associated with pitch to an output file
 fn transcription(pitch: String) {
     println!("{}", pitch)
 }
