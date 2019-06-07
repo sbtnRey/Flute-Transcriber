@@ -5,15 +5,22 @@ extern crate portaudio;
 extern crate rusty_microphone;
 
 use gtk::prelude::*;
+use std::io::prelude::*;
 use portaudio as pa;
 use std::cell::RefCell;
 use std::io;
-use std::io::Write;
 use std::rc::Rc;
 use std::sync::mpsc::*;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
+use std::error::Error;
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::fs::OpenOptions;
+
+
+
 
 use rusty_microphone::audio;
 use rusty_microphone::model::Model;
@@ -161,27 +168,131 @@ fn start_listening_current_dropdown_value(
 
 // Tracks and calls pitch strings
 fn tracker(state: Rc<RefCell<ApplicationState>>, cross_thread_state: Arc<RwLock<Model>>) {
-    let mut test_string = "".to_string();
-    gtk::timeout_add(1000 / FPS, move || {
+
+    let mut pitch_string = "".to_string();
+    let mut noise = false;
+    let mut prevPitch = Vec::new();
+
+    let f = File::create("transcription.txt").expect("Unable to create file");
+
+
+    prevPitch.push("".to_string());
+    prevPitch.push("".to_string());
+
+    gtk::timeout_add(3000 / FPS, move || {
         let ui = &state.borrow().ui;
 
         if let Ok(cross_thread_state) = cross_thread_state.read() {
+            // Set pitch value
             let mut pitch = &cross_thread_state.pitch_display();
-            let mut track = pitch;
 
-            test_string = pitch.to_string();
-            if pitch != "" || pitch.to_string() != test_string {
-                transcription(test_string.to_string());
+            // convert to string
+            pitch_string = pitch.to_string();
+
+
+            if pitch_string != prevPitch[0] && pitch_string != prevPitch[1] {
+                if noise == false{
+                    transcription(pitch_string.to_string());
+                }
+
+
+
+                if pitch == "G 4" || pitch == "G♯"{
+                    prevPitch[0] = "G 4".to_string();
+                    prevPitch[1] = "G♯4".to_string();
+                    noise = false;
+                } else if pitch == "A 4" {
+                    prevPitch[0] = "A 4".to_string();
+                    prevPitch[1] = "A 4".to_string();
+                    noise = false;
+                } else if pitch == "B♭4" || pitch == "B 4"{
+                    prevPitch[0] = "B♭4".to_string();
+                    prevPitch[1] = "B 4".to_string();
+                    noise = false;
+                } else if pitch == "C 5" || pitch == "C♯5"{
+                    prevPitch[0] = "C 5".to_string();
+                    prevPitch[1] = "C♯5".to_string();
+                    noise = false;
+                } else if pitch == "D 5"{
+                    prevPitch[0] = "D 5".to_string();
+                    prevPitch[1] = "D 5".to_string();
+                    noise = false;
+                } else if pitch == "E♭5"{
+                    prevPitch[0] = "E♭5".to_string();
+                    prevPitch[1] = "E♭5".to_string();
+                    noise = false;
+                } else if pitch == "F♯5"{
+                    prevPitch[0] = "F♯5".to_string();
+                    prevPitch[1] = "F♯5".to_string();
+                    noise = false;
+                } else if pitch == "G 5"{
+                    prevPitch[0] = "G 5".to_string();
+                    prevPitch[1] = "G 5".to_string();
+                    noise = false;
+                }else if pitch == "" {
+                    prevPitch[0] = "".to_string();
+                    noise = false;
+                } else {
+                    noise = true;
+                }
+
             }
+
         }
 
         gtk::Continue(true)
     });
 }
 
-//Currently outputs pitch to terminal, Will later write keys associated with pitch to an output file
+//Ouputs flute keys(6key+HiDo) to terminal and writes to file
 fn transcription(pitch: String) {
-    println!("{}", pitch)
+
+    let mut f = OpenOptions::new().append(true).open("transcription.txt").unwrap();
+
+
+    // Currently only Vivaldi Minor Flute
+    if pitch == "G 4" || pitch == "G♯4"{
+        println!("6");
+        let _ = f.write_all(" 6 ".as_bytes());
+        f.flush().unwrap();
+
+    }
+    if pitch == "A 4"{
+        println!("5");
+        let _ = f.write_all(" 5 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "B♭4" || pitch == "B 4"{
+        println!("4");
+        let _ = f.write_all(" 5 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "C 5" || pitch == "C♯5"{
+        println!("3");
+        let _ = f.write_all(" 3 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "D 5"{
+        println!("2");
+        let _ = f.write_all(" 2 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "E♭5"{
+        println!("1");
+        let _ = f.write_all(" 1 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "F♯5"{
+        println!("0");
+        let _ = f.write_all(" 0 ".as_bytes());
+        f.flush().unwrap();
+    }
+    if pitch == "G 5"{
+        println!("HiDo");
+        let _ = f.write_all(" HiDo ".as_bytes());
+        f.flush().unwrap();
+    }
+
 }
 
 fn main() {
